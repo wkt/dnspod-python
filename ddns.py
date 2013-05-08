@@ -5,6 +5,7 @@ from dnspod.apicn import *
 import sys
 import time
 import getpass
+import os
 
 def __getip():
     sock = socket.create_connection(('ns1.dnspod.net', 6666))
@@ -32,7 +33,7 @@ def logmsg(msg,toerr=True):
         w.write(txt)
         if toerr:
             sys.stderr.write(txt)
-##        except:pass
+    except:pass
     finally:
         if w:w.close() 
 
@@ -67,6 +68,23 @@ class DDNS(object):
     def set_password(self,password):
         self._password = password
 
+    def config_from_file(self,cfg="~/.config/ddns.conf"):
+        r=None
+        try:
+            r = open(os.path.expanduser(cfg))
+            jsn = json.load(r)
+            if jsn.has_key('email'):
+                self.set_email(jsn.get('email'))
+            if jsn.has_key('password'):
+                self.set_password(jsn.get('password'))
+            if jsn.has_key('domain'):
+                self._domain = jsn.get('domain')
+            if jsn.has_key('sub_domain'):
+                self._sub_domain = jsn.get('sub_domain')
+        finally:
+            if r:r.close()
+        return (self.email and self.password and len(self.email) > 0 and len(self.password) > 0 and self.check_login())
+ 
     def check_login(self):
         ret = True
         try:
@@ -74,6 +92,12 @@ class DDNS(object):
             ret = api()
         except:
             ret = False
+
+        if ret:
+            logmsg("Login test OK")
+        else:
+            logmsg("Login test failed")
+
         return ret
 
 
@@ -139,10 +163,8 @@ class DDNS(object):
             self.set_password(new_password)
             login_ok = self.check_login()
             if login_ok:
-                logmsg("Login test OK")
                 break
             else:
-                logmsg("Login test failed")
                 retry = raw_input("Failed to login ! Retry? Yes/No ")
                 if len(retry) == 0 or retry.lower() == 'yes' or retry.lower() == 'y':
                     pass
@@ -153,13 +175,16 @@ class DDNS(object):
 
 
 if __name__ == '__main__':
-    dns = DDNS('xx51.net',sub_domain='ddns')
-    dns.set_email("wkt55555@163.com")
+    dns = DDNS('test.net',sub_domain='ddns')
 
-    if dns.email_and_password_from_stdin():
+    if dns.config_from_file() or dns.email_and_password_from_stdin():
         dns.ddns_init()
+        time_out = 60
         while True:
-            dns.record_ddns()
-            time.sleep(60)
+            try:
+                dns.record_ddns()
+                time_out = 60
+            except:time_out = 10*60
+            time.sleep(time_out)
     else:
         logmsg("Give it up!")
