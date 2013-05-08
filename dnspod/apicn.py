@@ -7,6 +7,13 @@ except: import simplejson as json
 import socket
 import re
 
+def getip():
+    conn = httplib.HTTPConnection("getip.weiketing.com")
+    headers = {"User-Agent": "dnspod-python/0.01 (wkt@github)"}
+    conn.request("GET", "/", None, headers)
+    ret=conn.getresponse().read().strip()
+    conn.close()
+    return ret
 
 class ApiCn:
     def __init__(self, email, password, **kw):

@@ -6,7 +6,7 @@ import sys
 import time
 import getpass
 
-def getip():
+def __getip():
     sock = socket.create_connection(('ns1.dnspod.net', 6666))
     ip = sock.recv(16)
     sock.close()
