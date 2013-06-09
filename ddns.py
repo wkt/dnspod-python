@@ -37,6 +37,20 @@ def logmsg(msg,toerr=True):
     finally:
         if w:w.close() 
 
+def testInternetConnection():
+    res=False
+    address_array=[("www.baidu.com",80),('www.google.com',80)]
+    for addr in address_array:
+        try:
+            sock = socket.create_connection(addr)
+            sock.close()
+            res = True
+        except:
+            logmsg(exception_msg())
+        if res:break
+    return res
+
+
 def cmd_output(cmd):
     import subprocess
     p = subprocess.Popen(cmd,shell=True,stdout=subprocess.PIPE)
@@ -176,10 +190,12 @@ class DDNS(object):
 
 if __name__ == '__main__':
     dns = DDNS('test.net',sub_domain='ddns')
+    time_out = 60
+
+    while not testInternetConnection():time.sleep(time_out)
 
     if dns.config_from_file() or dns.email_and_password_from_stdin():
         dns.ddns_init()
-        time_out = 60
         while True:
             try:
                 dns.record_ddns()
